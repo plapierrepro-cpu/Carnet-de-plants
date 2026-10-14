@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Carnet de plants</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef2ee;--card:#fff;--ink:#14211c;--mute:#5b6b64;--line:#d5ded8;--acc:#2f7d4f;--acc-ink:#fff;--stamp:#b3412f;--chip:#e3ebe6;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#101a16;--card:#18251f;--ink:#e8f0eb;--mute:#93a69c;--line:#2a3b33;--acc:#5fc287;--acc-ink:#0b1510;--stamp:#ee7b66;--chip:#22332b}}
+:root[data-theme="dark"]{--bg:#101a16;--card:#18251f;--ink:#e8f0eb;--mute:#93a69c;--line:#2a3b33;--acc:#5fc287;--acc-ink:#0b1510;--stamp:#ee7b66;--chip:#22332b}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+h1,h2,h3{font-family:"Bricolage Grotesque",system-ui,sans-serif;margin:0;line-height:1.15}
+.wrap{max-width:640px;margin:0 auto;padding:16px}
+button,select,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.btn{background:var(--acc);color:var(--acc-ink);border:0;border-radius:10px;padding:12px 18px;font-weight:600}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.field{width:100%;padding:12px;border-radius:10px;border:1.5px solid var(--line);background:var(--card)}
+/* porte d'âge */
+#gate{min-height:100vh;display:flex;align-items:center}
+#gate .box{background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:24px;width:100%}
+#gate p{color:var(--mute)}
+#gate label{display:block;margin:16px 0 6px;font-weight:600}
+.fine{font-size:13px;color:var(--mute);margin-top:16px}
+/* entête */
+header h1{font-size:30px}
+header .sub{color:var(--mute);margin:4px 0 16px}
+.progress{background:var(--chip);border-radius:99px;height:10px;overflow:hidden}
+.progress i{display:block;height:100%;background:var(--acc);width:0;transition:width .3s}
+.pcount{display:flex;justify-content:space-between;font-size:14px;color:var(--mute);margin:6px 0 16px}
+.badges{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:12px}
+.badge{flex:0 0 auto;border:1.5px dashed var(--line);border-radius:12px;padding:8px 12px;font-size:14px;color:var(--mute);min-width:120px}
+.badge.on{border:1.5px solid var(--acc);color:var(--ink);background:var(--card)}
+.badge b{display:block;font-size:14px}
+.tools{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.tabs{display:flex;gap:6px;width:100%}
+.tab{flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--line);background:transparent;font-weight:600;font-size:14px}
+.tab[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+/* liste */
+.list{display:grid;gap:10px;margin-bottom:16px}
+.item{display:flex;align-items:center;gap:12px;background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:12px;width:100%;text-align:left}
+.stampbox{flex:0 0 52px;height:52px;border-radius:50%;border:2px dashed var(--line);display:grid;place-items:center;font-size:12px;color:var(--mute);text-align:center;line-height:1.1}
+.item.done .stampbox{border:3px solid var(--stamp);color:var(--stamp);font-weight:700;transform:rotate(-8deg)}
+.item .nm{font-weight:700}
+.item .meta{font-size:13px;color:var(--mute)}
+.stars{color:var(--acc);letter-spacing:1px;margin-left:auto;white-space:nowrap}
+.empty{text-align:center;color:var(--mute);padding:24px 8px}
+/* fiche */
+#sheet{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:flex-end;justify-content:center;z-index:5}
+#sheet.open{display:flex}
+#sheet .pane{background:var(--card);width:100%;max-width:640px;border-radius:20px 20px 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom,0px));max-height:90vh;overflow:auto}
+.rate{display:flex;gap:4px;margin:12px 0}
+.rate button{background:none;border:0;font-size:34px;color:var(--line);padding:0 2px}
+.rate button.on{color:var(--acc)}
+textarea.field{min-height:90px;resize:vertical}
+.row{display:flex;gap:8px;margin-top:14px}
+.row .btn{flex:1}
+details{margin:8px 0 24px}
+summary{cursor:pointer;font-weight:600}
+</style>
+</head>
+<body>
+<main class="wrap">
+
+<section id="gate" hidden>
+  <div class="box">
+    <h1>Carnet de plants</h1>
+    <p>Ce site est réservé aux adultes en âge légal de consommer du cannabis.</p>
+    <label for="prov">Ta province</label>
+    <select id="prov" class="field">
+      <option value="21">Québec (21 ans)</option>
+      <option value="19">Ontario (19 ans)</option>
+      <option value="18">Alberta (18 ans)</option>
+      <option value="19">Colombie-Britannique (19 ans)</option>
+      <option value="19">Autre province (19 ans)</option>
+    </select>
+    <label for="age">Ton âge</label>
+    <input id="age" class="field" type="number" inputmode="numeric" min="1" max="120">
+    <p id="gerr" style="color:var(--stamp);margin:10px 0 0" role="alert"></p>
+    <div class="row"><button class="btn" id="enter">Entrer</button></div>
+    <p class="fine">Cette étape est une déclaration, pas une vérification d'identité. Aucune donnée ne quitte ton appareil.</p>
+  </div>
+</section>
+
+<section id="app" hidden>
+  <header>
+    <h1>Mon carnet de plants</h1>
+    <p class="sub">Coche chaque plant essayé, note-le et collectionne les badges.</p>
+    <div class="progress"><i id="bar"></i></div>
+    <div class="pcount"><span id="cnt"></span><span id="avg"></span></div>
+    <div class="badges" id="badges"></div>
+  </header>
+
+  <div class="tools">
+    <input id="q" class="field" type="search" placeholder="Chercher un plant" aria-label="Chercher un plant">
+    <div class="tabs" role="group" aria-label="Filtre">
+      <button class="tab" data-f="all" aria-pressed="true">Tous</button>
+      <button class="tab" data-f="done" aria-pressed="false">Essayés</button>
+      <button class="tab" data-f="todo" aria-pressed="false">À essayer</button>
+    </div>
+  </div>
+
+  <div class="list" id="list"></div>
+
+  <details>
+    <summary>Ajouter un plant absent de la liste</summary>
+    <div class="row" style="flex-wrap:wrap">
+      <input id="cn" class="field" placeholder="Nom du plant" style="flex:2 1 160px">
+      <select id="ct" class="field" style="flex:1 1 120px"><option>Hybride</option><option>Indica</option><option>Sativa</option></select>
+      <button class="btn" id="cadd" style="flex:1 1 100%">Ajouter</button>
+    </div>
+  </details>
+
+  <p class="fine">Journal personnel, sans vente ni conseil médical. Consomme de façon responsable et selon les lois de ta province.</p>
+  <button class="btn ghost" id="reset">Effacer mes données</button>
+</section>
+</main>
+
+<div id="sheet" role="dialog" aria-modal="true" aria-labelledby="st">
+  <div class="pane">
+    <h2 id="st"></h2>
+    <div class="meta" id="sm" style="color:var(--mute)"></div>
+    <div class="rate" id="rate" role="group" aria-label="Note"></div>
+    <label for="note" style="font-weight:600">Mes notes (goût, odeur, souvenir)</label>
+    <textarea id="note" class="field"></textarea>
+    <div class="row">
+      <button class="btn" id="save">Marquer comme essayé</button>
+      <button class="btn ghost" id="close">Fermer</button>
+    </div>
+    <div class="row"><button class="btn ghost" id="remove" hidden>Retirer de mes essayés</button></div>
+  </div>
+</div>
+
+<script>
+var BASE=[["Blue Dream","Hybride"],["OG Kush","Hybride"],["Sour Diesel","Sativa"],["Girl Scout Cookies","Hybride"],["Granddaddy Purple","Indica"],["Northern Lights","Indica"],["Jack Herer","Sativa"],["Gelato","Hybride"],["Pineapple Express","Hybride"],["White Widow","Hybride"],["Green Crack","Sativa"],["Bubba Kush","Indica"],["Durban Poison","Sativa"],["AK-47","Hybride"],["Wedding Cake","Hybride"]];
+var KEY="carnet-plants-v1";
+var S={ok:false,tried:{},custom:[]};
+var filter="all",current=null,draft=0;
+
+function load(){try{var r=localStorage.getItem(KEY);if(r){var d=JSON.parse(r);if(d&&typeof d==="object"){S.ok=!!d.ok;S.tried=d.tried||{};S.custom=d.custom||[];}}}catch(e){}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+function $(id){return document.getElementById(id)}
+function all(){return BASE.concat(S.custom.map(function(c){return [c.name,c.type]}))}
+function stars(n){return "★".repeat(n)+"☆".repeat(5-n)}
+
+function gate(){
+  $("gate").hidden=false;$("app").hidden=true;
+  $("enter").onclick=function(){
+    var min=parseInt($("prov").value,10),age=parseInt($("age").value,10);
+    if(!age){$("gerr").textContent="Entre ton âge pour continuer.";return}
+    if(age<min){$("gerr").textContent="Tu n'as pas l'âge légal dans cette province ("+min+" ans). L'accès est refusé.";return}
+    S.ok=true;save();start();
+  };
+}
+function start(){$("gate").hidden=true;$("app").hidden=false;render()}
+
+function render(){
+  var list=all(),n=Object.keys(S.tried).length,ratings=Object.keys(S.tried).map(function(k){return S.tried[k].rating}).filter(Boolean);
+  $("bar").style.width=Math.round(100*n/list.length)+"%";
+  $("cnt").textContent=n+" sur "+list.length+" essayés";
+  $("avg").textContent=ratings.length?"Note moyenne : "+(ratings.reduce(function(a,b){return a+b},0)/ratings.length).toFixed(1)+" / 5":"";
+  // badges
+  var types={};list.forEach(function(p){if(S.tried[p[0]])types[p[1]]=1});
+  var B=[["Premier pas","Essayer 1 plant",n>=1],["Curieux","Essayer 5 plants",n>=5],["Collectionneur","Essayer 10 plants",n>=10],["Explorateur","Essayer indica, sativa et hybride",types.Indica&&types.Sativa&&types.Hybride],["Critique","Noter 5 plants",ratings.length>=5]];
+  var bd=$("badges");bd.textContent="";
+  B.forEach(function(b){var d=document.createElement("div");d.className="badge"+(b[2]?" on":"");var t=document.createElement("b");t.textContent=(b[2]?"✓ ":"")+b[0];d.appendChild(t);d.appendChild(document.createTextNode(b[1]));bd.appendChild(d)});
+  // liste
+  var q=$("q").value.trim().toLowerCase(),box=$("list");box.textContent="";
+  var shown=list.filter(function(p){
+    var done=!!S.tried[p[0]];
+    if(filter==="done"&&!done)return false;if(filter==="todo"&&done)return false;
+    return !q||p[0].toLowerCase().indexOf(q)>-1;
+  });
+  if(!shown.length){var e=document.createElement("div");e.className="empty";e.textContent=filter==="done"?"Aucun plant coché pour l'instant. Touche un plant pour le marquer.":"Aucun résultat.";box.appendChild(e)}
+  shown.forEach(function(p){
+    var t=S.tried[p[0]],b=document.createElement("button");b.className="item"+(t?" done":"");
+    var sb=document.createElement("div");sb.className="stampbox";sb.textContent=t?"ESSAYÉ":"à faire";
+    var tx=document.createElement("div");var nm=document.createElement("div");nm.className="nm";nm.textContent=p[0];var mt=document.createElement("div");mt.className="meta";mt.textContent=p[1];tx.appendChild(nm);tx.appendChild(mt);
+    b.appendChild(sb);b.appendChild(tx);
+    if(t&&t.rating){var s=document.createElement("div");s.className="stars";s.textContent=stars(t.rating);b.appendChild(s)}
+    b.onclick=function(){openSheet(p)};box.appendChild(b);
+  });
+}
+
+function drawRate(){
+  var r=$("rate");r.textContent="";
+  for(var i=1;i<=5;i++){(function(i){var b=document.createElement("button");b.textContent="★";b.setAttribute("aria-label",i+" sur 5");b.className=i<=draft?"on":"";b.onclick=function(){draft=(draft===i?0:i);drawRate()};r.appendChild(b)})(i)}
+}
+function openSheet(p){
+  current=p;var t=S.tried[p[0]];
+  $("st").textContent=p[0];$("sm").textContent=p[1];
+  draft=t?t.rating||0:0;$("note").value=t?t.note||"":"";
+  $("save").textContent=t?"Enregistrer":"Marquer comme essayé";
+  $("remove").hidden=!t;drawRate();$("sheet").classList.add("open");
+}
+function closeSheet(){$("sheet").classList.remove("open");current=null}
+
+$("save").onclick=function(){
+  if(!current)return;
+  S.tried[current[0]]={rating:draft,note:$("note").value.slice(0,500),date:new Date().toISOString().slice(0,10)};
+  save();closeSheet();render();
+};
+$("remove").onclick=function(){if(!current)return;delete S.tried[current[0]];save();closeSheet();render()};
+$("close").onclick=closeSheet;
+$("sheet").onclick=function(e){if(e.target===$("sheet"))closeSheet()};
+document.addEventListener("keydown",function(e){if(e.key==="Escape")closeSheet()});
+$("q").oninput=render;
+Array.prototype.forEach.call(document.querySelectorAll(".tab"),function(t){t.onclick=function(){
+  filter=t.getAttribute("data-f");
+  Array.prototype.forEach.call(document.querySelectorAll(".tab"),function(x){x.setAttribute("aria-pressed",x===t?"true":"false")});render()}});
+$("cadd").onclick=function(){
+  var n=$("cn").value.trim().slice(0,40);if(!n)return;
+  if(all().some(function(p){return p[0].toLowerCase()===n.toLowerCase()}))return;
+  S.custom.push({name:n,type:$("ct").value});save();$("cn").value="";render();
+};
+$("reset").onclick=function(){
+  if(confirm("Effacer tous tes plants essayés et tes notes ?")){S.tried={};S.custom=[];save();render()}
+};
+
+load();if(S.ok)start();else gate();
+</script>
+</body>
+</html>
