@@ -11,6 +11,7 @@ box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:en
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#101a16;--card:#18251f;--ink:#e8f0eb;--mute:#93a69c;--line:#2a3b33;--acc:#5fc287;--acc-ink:#0b1510;--stamp:#ee7b66;--chip:#22332b}}
 :root[data-theme="dark"]{--bg:#101a16;--card:#18251f;--ink:#e8f0eb;--mute:#93a69c;--line:#2a3b33;--acc:#5fc287;--acc-ink:#0b1510;--stamp:#ee7b66;--chip:#22332b}
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
 h1,h2,h3{font-family:"Bricolage Grotesque",system-ui,sans-serif;margin:0;line-height:1.15}
@@ -62,6 +63,28 @@ textarea.field{min-height:90px;resize:vertical}
 .row .btn{flex:1}
 details{margin:8px 0 24px}
 summary{cursor:pointer;font-weight:600}
+
+body{padding-bottom:84px}
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:4;display:flex;background:var(--card);border-top:1.5px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+.nav button{flex:1;background:none;border:0;padding:10px 4px;font-size:13px;color:var(--mute);display:grid;gap:2px;justify-items:center}
+.nav button span{font-size:20px;line-height:1}
+.nav button[aria-current="page"]{color:var(--acc);font-weight:700}
+.thumb{position:relative;flex:0 0 56px;width:56px;height:56px}
+.thumb img.ph{width:56px;height:56px;object-fit:cover;border-radius:12px;display:block}
+.thumb .mini{position:absolute;right:-6px;bottom:-6px}
+.hero{display:grid;place-items:center;margin-bottom:8px}
+.hero img{width:100%;max-height:240px;object-fit:cover;border-radius:14px}
+.hrow{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.heart{background:none;border:0;font-size:30px;color:var(--line);padding:4px}
+.heart[aria-pressed="true"]{color:var(--stamp)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0 20px}
+.cell{background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:10px 4px;display:grid;justify-items:center;gap:6px;font-size:12px;text-align:center;width:100%}
+.cell.off{opacity:.55}
+.sel{display:flex;gap:8px;width:100%}.sel select{flex:1}
+.bar{display:flex;align-items:center;gap:8px;margin:8px 0;font-size:14px}.bar b{flex:0 0 76px}.bar .tr{flex:1;background:var(--chip);border-radius:99px;height:12px;overflow:hidden}.bar .tr i{display:block;height:100%;background:var(--acc)}
+.card{background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+h2.sec{font-size:20px;margin:16px 0 8px}
+.item{padding:10px 12px}
 </style>
 </head>
 <body>
@@ -88,25 +111,24 @@ summary{cursor:pointer;font-weight:600}
 </section>
 
 <section id="app" hidden>
-  <header>
-    <h1>Mon carnet de plants</h1>
-    <p class="sub">Coche chaque plant essayé, note-le et collectionne les badges.</p>
-    <div class="progress"><i id="bar"></i></div>
-    <div class="pcount"><span id="cnt"></span><span id="avg"></span></div>
-    <div class="badges" id="badges"></div>
-  </header>
-
+<div id="v-list">
+  <header><h1>Mon carnet de plants</h1><p class="sub">Coche, note, photographie et collectionne.</p>
+  <div class="progress"><i id="bar"></i></div><div class="pcount"><span id="cnt"></span><span id="avg"></span></div></header>
   <div class="tools">
     <input id="q" class="field" type="search" placeholder="Chercher un plant" aria-label="Chercher un plant">
+    <div class="sel">
+      <select id="ty" class="field" aria-label="Type"><option value="">Tous les types</option><option>Indica</option><option>Sativa</option><option>Hybride</option><option value="cbd">Riches en CBD</option></select>
+      <select id="so" class="field" aria-label="Tri"><option value="name">Tri : nom</option><option value="thc">Tri : THC</option><option value="rate">Tri : mes notes</option><option value="recent">Tri : récents</option></select>
+    </div>
     <div class="tabs" role="group" aria-label="Filtre">
       <button class="tab" data-f="all" aria-pressed="true">Tous</button>
       <button class="tab" data-f="done" aria-pressed="false">Essayés</button>
       <button class="tab" data-f="todo" aria-pressed="false">À essayer</button>
+      <button class="tab" data-f="fav" aria-pressed="false">♥</button>
     </div>
+    <button class="btn ghost" id="rand" style="width:100%">🎲 Surprends-moi : quel plant essayer ?</button>
   </div>
-
   <div class="list" id="list"></div>
-
   <details>
     <summary>Ajouter un plant absent de la liste</summary>
     <div class="row" style="flex-wrap:wrap">
@@ -115,16 +137,37 @@ summary{cursor:pointer;font-weight:600}
       <button class="btn" id="cadd" style="flex:1 1 100%">Ajouter</button>
     </div>
   </details>
-
+</div>
+<div id="v-coll" hidden><h1>Ma collection</h1>
+  <h2 class="sec">Succès</h2><div class="badges" id="badges"></div>
+  <h2 class="sec">Badges de plants</h2><p class="sub" style="color:var(--mute);margin:0">Chaque plant a son badge. Il s'allume quand tu l'essaies. Forme : hexagone = indica, étoile = sativa, rond = hybride.</p>
+  <div class="grid" id="grid"></div>
+</div>
+<div id="v-stats" hidden><h1>Mes stats</h1><div id="stats"></div></div>
+<div id="v-more" hidden><h1>Réglages</h1>
+  <div class="card"><b>Apparence</b><div class="row"><button class="btn ghost" data-th="">Auto</button><button class="btn ghost" data-th="light">Clair</button><button class="btn ghost" data-th="dark">Sombre</button></div></div>
+  <div class="card"><b>Sauvegarde</b><p class="fine" style="margin-top:4px">Copie ce texte et garde-le (notes, plants essayés, favoris). Les photos restent sur cet appareil et ne sont pas incluses.</p>
+    <textarea id="bk" class="field" aria-label="Sauvegarde"></textarea>
+    <div class="row"><button class="btn" id="bkgen">Générer</button><button class="btn ghost" id="bkrest">Restaurer</button></div><p class="fine" id="bkmsg"></p></div>
+  <div class="card"><b>D'où viennent les pourcentages ?</b><p class="fine" style="margin-top:4px">Le THC et le CBD changent d'un lot à l'autre, même pour un même plant. Ce sont des repères, jamais une garantie : fie-toi à l'étiquette du produit. « Moyenne mesurée » vient d'une étude sur des patients (Baron et coll., 2018). « Fourchette tirée d'un site » vient de Leafly, Cannabis Database (Université de l'Alberta) et Cannabis &amp; Tech Today. « Moyenne de laboratoire » vient de données de labos publiées par Leafly. Quand aucun chiffre fiable n'a été trouvé, le plant n'en affiche pas. Le signe ≈ indique une estimation typique, moins fiable. Indica, sativa et hybride sont des habitudes de marché, pas une science exacte.</p></div>
   <p class="fine">Journal personnel, sans vente ni conseil médical. Consomme de façon responsable et selon les lois de ta province.</p>
   <button class="btn ghost" id="reset">Effacer mes données</button>
+</div>
+<nav class="nav" aria-label="Navigation">
+  <button data-v="list" aria-current="page"><span>📋</span>Plants</button>
+  <button data-v="coll"><span>🏅</span>Collection</button>
+  <button data-v="stats"><span>📊</span>Stats</button>
+  <button data-v="more"><span>⚙️</span>Réglages</button>
+</nav>
 </section>
 </main>
 
 <div id="sheet" role="dialog" aria-modal="true" aria-labelledby="st">
   <div class="pane">
-    <h2 id="st"></h2>
+    <div class="hero" id="hero"></div>
+    <div class="hrow"><h2 id="st"></h2><button class="heart" id="fav" aria-pressed="false" aria-label="Favori">♥</button></div>
     <div class="meta" id="sm" style="color:var(--mute)"></div>
+    <div class="row"><label class="btn ghost" for="photo" style="flex:1;text-align:center">📷 Ma photo</label><input id="photo" type="file" accept="image/*" style="display:none"><button class="btn ghost" id="rmphoto" hidden>Retirer</button></div>
     <div class="rate" id="rate" role="group" aria-label="Note"></div>
     <label for="note" style="font-weight:600">Mes notes (goût, odeur, souvenir)</label>
     <textarea id="note" class="field"></textarea>
@@ -135,18 +178,262 @@ summary{cursor:pointer;font-weight:600}
     <div class="row"><button class="btn ghost" id="remove" hidden>Retirer de mes essayés</button></div>
   </div>
 </div>
-
 <script>
-var BASE=[["Blue Dream","Hybride"],["OG Kush","Hybride"],["Sour Diesel","Sativa"],["Girl Scout Cookies","Hybride"],["Granddaddy Purple","Indica"],["Northern Lights","Indica"],["Jack Herer","Sativa"],["Gelato","Hybride"],["Pineapple Express","Hybride"],["White Widow","Hybride"],["Green Crack","Sativa"],["Bubba Kush","Indica"],["Durban Poison","Sativa"],["AK-47","Hybride"],["Wedding Cake","Hybride"]];
-var KEY="carnet-plants-v1";
-var S={ok:false,tried:{},custom:[]};
-var filter="all",current=null,draft=0;
+var SRC={m:"moyenne mesurée, étude clinique",s:"fourchette tirée d'un site",e:"estimation typique",l:"moyenne de laboratoire (Leafly)"};
+var T="THC ",C=" % · CBD ";
+var BASE=[
+["OG Shark","Indica",T+"21,4"+C+"0 %","m"],["Afghani","Indica",T+"15,6"+C+"0 %","m"],["Skywalker OG","Indica",T+"22,9"+C+"0 %","m"],["Lemon Sour Diesel","Sativa",T+"18,3"+C+"0 %","m"],["Jack Herer","Sativa",T+"17,9"+C+"0 %","m"],["Jean Guy","Hybride",T+"17,3"+C+"0 %","m"],["White Widow","Hybride",T+"18,7"+C+"0 %","m"],["Pink Kush","Indica",T+"25,8"+C+"0 %","m"],["Master Kush","Indica",T+"25,6"+C+"0 %","m"],["Sweet Skunk CBD","Hybride",T+"9,1"+C+"11,2 %","m"],
+["Blue Dream","Hybride",T+"18,4 %","l"],["Forbidden Fruit","Hybride",T+"23–26 %","s"],["Adonis","Indica",T+"14–18 %","s"],["Alien Sour Apple","Sativa","",""],["Gorilla Glue #4","Sativa",T+"18–25 % (jusqu'à 32 %)"+C+"0,05–0,1 %","s"],["Cannatonic","Hybride","CBD jusqu'à 17 % · THC faible","s"],["ACDC","Hybride","Ratio CBD:THC d'environ 20:1","s"],["Dancehall","Sativa","Ratio CBD:THC d'environ 1:1","s"],["Mango Haze (Color Cannabis)","Hybride",T+"4–11"+C+"6–16 %","s"],["CBD Shark (Whistler)","Indica",T+"8"+C+"13 %","s"],["Solei Balance","Hybride",T+"4–9"+C+"7–14 %","s"],["Campfire (Alta Vie)","Hybride",T+"3–6"+C+"5–10 %","s"],["Penelope (Tweed)","Hybride",T+"5–14"+C+"4–9 %","s"],["Skunk Haze (Tantalus)","Hybride",T+"4–8"+C+"6–12 %","s"],
+["OG Kush","Hybride",T+"19,4 %","l"],["Sour Diesel","Sativa",T+"18,5 %","l"],["Girl Scout Cookies","Hybride",T+"19,1 %","l"],["Granddaddy Purple","Indica",T+"17,5 %","l"],["Northern Lights","Indica",T+"16–21"+C+"moins de 1 %","e"],["Gelato","Hybride",T+"20–25"+C+"moins de 1 %","e"],["Pineapple Express","Hybride",T+"17–22"+C+"moins de 1 %","e"],["Green Crack","Sativa",T+"16–24"+C+"moins de 1 %","e"],["Bubba Kush","Indica",T+"15–22"+C+"moins de 1 %","e"],["Durban Poison","Sativa",T+"15–24"+C+"moins de 1 %","e"],["AK-47","Hybride",T+"13–20"+C+"moins de 1 %","e"],["Wedding Cake","Hybride",T+"22–27"+C+"moins de 1 %","e"],["Amnesia Haze","Sativa",T+"20–25"+C+"moins de 1 %","e"],["Critical Mass","Indica",T+"18–22"+C+"moins de 1 %","e"],["Strawberry Cough","Sativa",T+"15–20"+C+"moins de 1 %","e"],["Runtz","Hybride",T+"23–29"+C+"moins de 1 %","e"],["Purple Punch","Indica",T+"18–25"+C+"moins de 1 %","e"],["Do-Si-Dos","Indica",T+"20–28"+C+"moins de 1 %","e"],["Trainwreck","Hybride",T+"18–25"+C+"moins de 1 %","e"],["Super Lemon Haze","Sativa",T+"18–23"+C+"moins de 1 %","e"],["Blueberry","Indica",T+"16–22"+C+"moins de 1 %","e"],["Mimosa","Hybride",T+"19–27"+C+"moins de 1 %","e"],["Zkittlez","Indica",T+"18–23"+C+"moins de 1 %","e"],
+["9 Lb Hammer","Indica",T+"14–23 %","s"],
+["Bob Marley","Hybride",T+"15–20 %","s"],
+["Chemdawg","Hybride",T+"jusqu'à 19 %","s"],
+["Flo","Hybride",T+"jusqu'à 14 %"+C+"0,26 %","s"],
+["Golden Cobra","Hybride",T+"24–28 %","s"],
+["Gorilla Glue (GG1)","Hybride",T+"25–28 %","s"],
+["Grape Stomper","Hybride",T+"18–26 %","s"],
+["Grizzly Kush","Hybride",T+"22 % et plus","s"],
+["Hemlock","Hybride",T+"21 % environ","s"],
+["Jabberwocky","Hybride",T+"33 % environ","s"],
+["Gas","Indica",T+"16–19 %","s"],
+["Tahoe OG Kush","Hybride",T+"14–21 %","s"],
+["Ghost OG","Hybride",T+"28 % et plus","l"],
+["Wappa","Hybride",T+"26,6 %","l"],
+["OG Chem","Hybride",T+"26,4 %","l"],
+["White Fire Alien OG","Hybride",T+"24,9 %","l"],
+["Head Cheese","Hybride",T+"24,7 %","l"],
+["Bruce Banner","Hybride",T+"24,6 %","l"],
+["8-Ball Kush","Indica","",""],
+["Hash Plant","Indica","",""],
+["Cookies and Cream","Hybride","",""],
+["Dairy Queen","Hybride","",""],
+["Goji OG","Hybride","",""],
+["Chemdawg #4","Hybride","",""],
+["Dark Shadow Haze","Hybride","",""],
+["97 Sage","Hybride","",""],
+["Strawberry Runtz","Hybride","THC 32 % environ","s"],
+["Coochie Runtz","Hybride","THC 29 % environ","s"],
+["Runtz Muffin","Hybride","THC 29 % environ","s"],
+["Greasy Runtz","Hybride","THC 28 % environ","s"],
+["Red Runtz","Hybride","THC 28 % environ","s"],
+["Grape Runtz","Hybride","THC 27 % environ","s"],
+["Purple Runtz","Hybride","",""],
+["Rainbow Runtz","Hybride","",""],
+["Watermelon Runtz","Hybride","",""],
+["Pink Runtz","Hybride","",""],
+["CBD Kush (Acreage Pharms)","Hybride","THC 6–14 % · CBD 8–14 %","s"],
+["Durga Mata 2","Hybride","THC 7–17 % · CBD 7–17 %","s"],
+["OG Kush CBD","Hybride","CBD 10 % environ","s"],
+["The Wife","Hybride","Ratio CBD:THC d'environ 20:1","s"],
+["Avidekel","Hybride","THC très faible · riche en CBD (ratio CBD:THC élevé)","s"],
+["Remedy","Hybride","Riche en CBD (ratio CBD:THC élevé)","s"],
+["Medihaze","Sativa","Riche en CBD (ratio CBD:THC élevé)","s"],
+["Harlequin","Sativa","Riche en CBD (ratio CBD:THC élevé)","s"],
+["Ringo's Gift","Hybride","Riche en CBD (ratio CBD:THC élevé)","s"],
+["Harle-Tsu","Hybride","Riche en CBD (ratio CBD:THC élevé)","s"],
+["Sour Tsunami","Sativa","Riche en CBD (ratio CBD:THC élevé)","s"],
+["Charlotte's Web","Sativa","Riche en CBD (ratio CBD:THC élevé)","e"],
+["Afghan Kush","Indica","",""],
+["Hindu Kush","Indica","",""],
+["Purple Kush","Indica","",""],
+["Blue Cheese","Indica","",""],
+["Purple Urkle","Indica","",""],
+["Grape Ape","Indica","",""],
+["King Louis XIII","Indica","",""],
+["LA Confidential","Indica","",""],
+["Kosher Kush","Indica","",""],
+["Larry OG","Indica","",""],
+["Platinum OG","Indica","",""],
+["Black Domina","Indica","",""],
+["Blackberry Kush","Indica","",""],
+["God's Gift","Indica","",""],
+["Death Bubba","Indica","",""],
+["Slurricane","Indica","",""],
+["MK Ultra","Indica","",""],
+["Mendo Breath","Indica","",""],
+["Sunset Sherbet","Indica","",""],
+["Cherry Pie","Indica","",""],
+["Biscotti","Indica","",""],
+["Ice Cream Cake","Indica","",""],
+["London Pound Cake","Indica","",""],
+["Pre-98 Bubba Kush","Indica","",""],
+["Lemon Skunk","Indica","",""],
+["Space Queen","Indica","",""],
+["Cheese","Indica","",""],
+["Acapulco Gold","Sativa","",""],
+["Maui Wowie","Sativa","",""],
+["Panama Red","Sativa","",""],
+["Colombian Gold","Sativa","",""],
+["Thai","Sativa","",""],
+["Lamb's Bread","Sativa","",""],
+["Jack Flash","Sativa","",""],
+["Tangie","Sativa","",""],
+["Candyland","Sativa","",""],
+["Super Silver Haze","Sativa","",""],
+["Silver Haze","Sativa","",""],
+["Neville's Haze","Sativa","",""],
+["Purple Haze","Sativa","",""],
+["Lemon Haze","Sativa","",""],
+["Cinderella 99","Sativa","",""],
+["Tangerine Dream","Sativa","",""],
+["Chernobyl","Sativa","",""],
+["Orange Crush","Sativa","",""],
+["Liberty Haze","Sativa","",""],
+["Kali Mist","Sativa","",""],
+["Sour Tangie","Sativa","",""],
+["Super Sour Diesel","Sativa","",""],
+["NYC Diesel","Sativa","",""],
+["Strawberry Diesel","Sativa","",""],
+["Moby Dick","Sativa","",""],
+["Jack Frost","Sativa","",""],
+["Jack the Ripper","Sativa","",""],
+["Hawaiian Snow","Sativa","",""],
+["Island Sweet Skunk","Sativa","",""],
+["Ghost Train Haze","Sativa","",""],
+["Apple Fritter","Hybride","",""],
+["Gary Payton","Hybride","",""],
+["Jealousy","Hybride","",""],
+["Gushers","Hybride","",""],
+["Cereal Milk","Hybride","",""],
+["Kush Mints","Hybride","",""],
+["Animal Cookies","Hybride","",""],
+["Tropicana Cookies","Hybride","",""],
+["Thin Mint GSC","Hybride","",""],
+["Platinum GSC","Hybride","",""],
+["Gorilla Cookies","Hybride","",""],
+["Gorilla Zkittlez","Hybride","",""],
+["Zookies","Hybride","",""],
+["Sherblato","Hybride","",""],
+["Lemon Cherry Gelato","Hybride","",""],
+["Cherry Gelato","Hybride","",""],
+["Papaya","Hybride","",""],
+["MAC (Miracle Alien Cookies)","Hybride","",""],
+["Sour OG","Hybride","",""],
+["Lemon OG","Hybride","",""],
+["Fire OG","Hybride","",""],
+["SFV OG","Hybride","",""],
+["Alien OG","Hybride","",""],
+["Stardawg","Hybride","",""],
+["Chem 91","Hybride","",""],
+["Mother's Milk","Hybride","",""],
+["Sweet Tooth","Hybride","",""],
+["GMO","Hybride","",""],
+["Blue Zkittlez","Hybride","",""],
+["Rare Dankness #1","Hybride","",""],
+["Banana Kush","Hybride","",""],
+["Glueberry OG","Hybride","",""],
+["Headband","Hybride","",""],
+["Skunk #1","Hybride","",""],
+["Strawberry Banana","Hybride","",""],
+["Lemon Kush","Hybride","",""],
+["Sherbet","Hybride","",""],
+["Golden Goat","Sativa","",""],
+["Super Boof","Hybride","",""],
+["Gush Mints","Hybride","",""],
+["Hash Burger","Hybride","",""],
+["Apples & Bananas","Hybride","",""],
+["Grease Monkey","Hybride","",""],
+["Original Glue","Hybride","",""],
+["Blue Mystic","Indica","",""],
+["Northern Lights #5","Indica","",""],
+["White Rhino","Indica","",""],
+["White Russian","Hybride","",""],
+["Romulan","Indica","",""],
+["Sensi Star","Indica","",""],
+["Querkle","Indica","",""],
+["Mr. Nice Guy","Indica","",""],
+["Wedding Crasher","Hybride","",""],
+["Wedding Pie","Hybride","",""],
+["Fruity Pebbles OG","Hybride","",""],
+["Kush Cake","Indica","",""],
+["Key Lime Pie","Hybride","",""],
+["Lemon Meringue","Hybride","",""],
+["Blueberry Muffin","Indica","",""],
+["Grape Pie","Hybride","",""],
+["Purple Trainwreck","Hybride","",""],
+["Purple Wreck","Hybride","",""],
+["Blueberry Kush","Indica","",""],
+["Blue Cookies","Hybride","",""],
+["Pineapple Kush","Hybride","",""],
+["Pineapple Chunk","Hybride","",""],
+["Banana OG","Indica","",""],
+["Banana Punch","Hybride","",""],
+["Hawaiian Haze","Sativa","",""],
+["Kona Gold","Sativa","",""],
+["Bay 11","Sativa","",""],
+["Bay Dream","Sativa","",""],
+["Willie Nelson","Sativa","",""],
+["Dutch Treat","Hybride","",""],
+["Original Haze","Sativa","",""],
+["Malawi Gold","Sativa","",""],
+["Congo","Sativa","",""],
+["Blueberry Haze","Sativa","",""],
+["Grapefruit","Sativa","",""],
+["Lemon Drop","Sativa","",""],
+["Lemon Tree","Hybride","",""],
+["Sundae Driver","Hybride","",""],
+["Face Off OG","Indica","",""],
+["Jet Fuel","Sativa","",""],
+["Cherry Punch","Hybride","",""],
+["Black Cherry Soda","Hybride","",""],
+["Cherry AK","Hybride","",""],
+["Orange Cookies","Hybride","",""],
+["Orange Creamsicle","Hybride","",""],
+["Pink Lemonade","Hybride","",""],
+["Strawberry Lemonade","Hybride","",""],
+["Strawberry Shortcake","Hybride","",""],
+["Strawberry Cheesecake","Hybride","",""],
+["Blueberry Cheesecake","Hybride","",""],
+["Birthday Cake","Hybride","",""],
+["Bubble Gum","Hybride","",""],
+["Cotton Candy Kush","Hybride","",""],
+["Cotton Candy","Hybride","",""],
+["Candy Kush","Hybride","",""],
+["Peanut Butter Breath","Hybride","",""],
+["Mint Chocolate Chip","Hybride","",""],
+["Triangle Kush","Hybride","",""],
+["Triangle Mints","Hybride","",""],
+["Lemonnade","Hybride","",""],
+["Pink Cookies","Hybride","",""],
+["Lemon Cookies","Hybride","",""],
+["Platinum Cookies","Hybride","",""],
+["Triple Chocolate Chip","Hybride","",""],
+["Garlic Breath","Hybride","",""],
+["Jet Fuel Gelato","Hybride","",""],
+["Gas Mask","Hybride","",""],
+["Gorilla Breath","Hybride","",""],
+["Mochi Gelato","Hybride","",""],
+["Mochi","Hybride","",""],
+["Pie Face","Hybride","",""],
+["Rainbow Belts","Hybride","",""],
+["Orange Creamsicle OG","Hybride","",""]];
+function thc(p){return p[2]?(p[3]==="e"?"≈ ":"")+p[2]:"THC/CBD : voir l'étiquette du produit"}
 
-function load(){try{var r=localStorage.getItem(KEY);if(r){var d=JSON.parse(r);if(d&&typeof d==="object"){S.ok=!!d.ok;S.tried=d.tried||{};S.custom=d.custom||[];}}}catch(e){}}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+var KEY="carnet-plants-v1";
+var S={ok:false,tried:{},custom:[],fav:{},photos:{},theme:""};
+var tab="all",current=null,draft=0;
+function load(){try{var r=localStorage.getItem(KEY);if(r){var d=JSON.parse(r);if(d&&typeof d==="object"){S.ok=!!d.ok;S.tried=d.tried||{};S.custom=d.custom||[];S.fav=d.fav||{};S.photos=d.photos||{};S.theme=d.theme||""}}}catch(e){}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));return true}catch(e){return false}}
 function $(id){return document.getElementById(id)}
-function all(){return BASE.concat(S.custom.map(function(c){return [c.name,c.type]}))}
+function qa(s){return Array.prototype.slice.call(document.querySelectorAll(s))}
+function all(){return BASE.concat(S.custom.map(function(c){return [c.name,c.type,"",""]}))}
 function stars(n){return "★".repeat(n)+"☆".repeat(5-n)}
+function num(p,k){var m=new RegExp(k+"\\s*(?:jusqu'à\\s*)?(\\d+(?:,\\d+)?)(?:–(\\d+(?:,\\d+)?))?").exec(p[2]||"");return m?parseFloat((m[2]||m[1]).replace(",",".")):-1}
+function h(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!==undefined)e.textContent=txt;return e}
+function hue(s){var x=0;for(var i=0;i<s.length;i++)x=(x*31+s.charCodeAt(i))%360;return x}
+function badge(p,on,size){
+  var hh=hue(p[0]),f=on?"hsl("+hh+",55%,40%)":"#9aa7a0",s=on?"hsl("+hh+",65%,75%)":"#c9d2cd";
+  var ini=p[0].split(/[\s\-]+/).map(function(w){return w.replace(/[^A-Za-z0-9]/g,"").charAt(0)}).join("").slice(0,2).toUpperCase()||"?";
+  var sh=p[1]==="Indica"?'<polygon points="50,4 91,27 91,73 50,96 9,73 9,27" ':p[1]==="Sativa"?'<polygon points="50,3 61,22 82,14 78,37 98,50 78,63 82,86 61,78 50,97 39,78 18,86 22,63 2,50 22,37 18,14 39,22" ':'<circle cx="50" cy="50" r="46" ';
+  return '<svg viewBox="0 0 100 100" width="'+size+'" height="'+size+'" aria-hidden="true">'+sh+'fill="'+f+'" stroke="'+s+'" stroke-width="4"/><text x="50" y="62" text-anchor="middle" font-family="Bricolage Grotesque,system-ui,sans-serif" font-weight="700" font-size="34" fill="#fff">'+ini+'</text></svg>';
+}
+function thumb(p,size){
+  var d=h("div","thumb"),on=!!S.tried[p[0]];
+  if(S.photos[p[0]]){var im=h("img","ph");im.src=S.photos[p[0]];im.alt="";d.appendChild(im);var m=h("div","mini");m.innerHTML=badge(p,on,24);d.appendChild(m)}
+  else d.innerHTML=badge(p,on,56);
+  return d;
+}
+function applyTheme(){if(S.theme)document.documentElement.setAttribute("data-theme",S.theme);else document.documentElement.removeAttribute("data-theme")}
 
 function gate(){
   $("gate").hidden=false;$("app").hidden=true;
@@ -157,69 +444,137 @@ function gate(){
     S.ok=true;save();start();
   };
 }
-function start(){$("gate").hidden=true;$("app").hidden=false;render()}
+function start(){$("gate").hidden=true;$("app").hidden=false;applyTheme();render();setView("list")}
+function setView(v){
+  ["list","coll","stats","more"].forEach(function(k){$("v-"+k).hidden=(k!==v)});
+  qa(".nav button").forEach(function(b){if(b.getAttribute("data-v")===v)b.setAttribute("aria-current","page");else b.removeAttribute("aria-current")});
+  window.scrollTo(0,0);
+}
 
-function render(){
-  var list=all(),n=Object.keys(S.tried).length,ratings=Object.keys(S.tried).map(function(k){return S.tried[k].rating}).filter(Boolean);
+function render(){renderTop();renderList();renderColl();renderStats()}
+function renderTop(){
+  var list=all(),n=list.filter(function(p){return S.tried[p[0]]}).length;
+  var r=list.map(function(p){return (S.tried[p[0]]||{}).rating||0}).filter(Boolean);
   $("bar").style.width=Math.round(100*n/list.length)+"%";
   $("cnt").textContent=n+" sur "+list.length+" essayés";
-  $("avg").textContent=ratings.length?"Note moyenne : "+(ratings.reduce(function(a,b){return a+b},0)/ratings.length).toFixed(1)+" / 5":"";
-  // badges
-  var types={};list.forEach(function(p){if(S.tried[p[0]])types[p[1]]=1});
-  var B=[["Premier pas","Essayer 1 plant",n>=1],["Curieux","Essayer 5 plants",n>=5],["Collectionneur","Essayer 10 plants",n>=10],["Explorateur","Essayer indica, sativa et hybride",types.Indica&&types.Sativa&&types.Hybride],["Critique","Noter 5 plants",ratings.length>=5]];
-  var bd=$("badges");bd.textContent="";
-  B.forEach(function(b){var d=document.createElement("div");d.className="badge"+(b[2]?" on":"");var t=document.createElement("b");t.textContent=(b[2]?"✓ ":"")+b[0];d.appendChild(t);d.appendChild(document.createTextNode(b[1]));bd.appendChild(d)});
-  // liste
-  var q=$("q").value.trim().toLowerCase(),box=$("list");box.textContent="";
-  var shown=list.filter(function(p){
+  $("avg").textContent=r.length?"Note moyenne : "+(r.reduce(function(a,b){return a+b},0)/r.length).toFixed(1)+" / 5":"";
+}
+function renderList(){
+  var q=$("q").value.trim().toLowerCase(),ty=$("ty").value,so=$("so").value,box=$("list");box.textContent="";
+  var arr=all().filter(function(p){
     var done=!!S.tried[p[0]];
-    if(filter==="done"&&!done)return false;if(filter==="todo"&&done)return false;
+    if(tab==="done"&&!done)return false;if(tab==="todo"&&done)return false;if(tab==="fav"&&!S.fav[p[0]])return false;
+    if(ty==="cbd"){if(!(num(p,"CBD")>=4||/ratio/i.test(p[2]||"")))return false}else if(ty&&p[1]!==ty)return false;
     return !q||p[0].toLowerCase().indexOf(q)>-1;
   });
-  if(!shown.length){var e=document.createElement("div");e.className="empty";e.textContent=filter==="done"?"Aucun plant coché pour l'instant. Touche un plant pour le marquer.":"Aucun résultat.";box.appendChild(e)}
-  shown.forEach(function(p){
-    var t=S.tried[p[0]],b=document.createElement("button");b.className="item"+(t?" done":"");
-    var sb=document.createElement("div");sb.className="stampbox";sb.textContent=t?"ESSAYÉ":"à faire";
-    var tx=document.createElement("div");var nm=document.createElement("div");nm.className="nm";nm.textContent=p[0];var mt=document.createElement("div");mt.className="meta";mt.textContent=p[1];tx.appendChild(nm);tx.appendChild(mt);
-    b.appendChild(sb);b.appendChild(tx);
-    if(t&&t.rating){var s=document.createElement("div");s.className="stars";s.textContent=stars(t.rating);b.appendChild(s)}
+  arr.sort(function(a,b){
+    var ta=S.tried[a[0]]||{},tb=S.tried[b[0]]||{};
+    if(so==="thc")return num(b,"THC")-num(a,"THC");
+    if(so==="rate")return (tb.rating||0)-(ta.rating||0);
+    if(so==="recent")return (tb.date||"").localeCompare(ta.date||"");
+    return a[0].localeCompare(b[0]);
+  });
+  if(!arr.length){box.appendChild(h("div","empty",tab==="fav"?"Aucun favori. Touche le ♥ dans la fiche d'un plant.":tab==="done"?"Aucun plant coché pour l'instant. Touche un plant pour le marquer.":"Aucun résultat."));return}
+  arr.forEach(function(p){
+    var t=S.tried[p[0]],b=h("button","item"+(t?" done":""));
+    var tx=h("div");tx.appendChild(h("div","nm",p[0]));tx.appendChild(h("div","meta",p[1]+" · "+thc(p)));
+    b.appendChild(thumb(p));b.appendChild(tx);
+    var rt=h("div","stars",(S.fav[p[0]]?"♥ ":"")+(t&&t.rating?stars(t.rating):""));b.appendChild(rt);
     b.onclick=function(){openSheet(p)};box.appendChild(b);
   });
+}
+function renderColl(){
+  var list=all(),n=list.filter(function(p){return S.tried[p[0]]}).length;
+  var ratings=list.map(function(p){return (S.tried[p[0]]||{}).rating||0}).filter(Boolean).length;
+  var types={};list.forEach(function(p){if(S.tried[p[0]])types[p[1]]=1});
+  var B=[["Premier pas","Essayer 1 plant",n>=1],["Curieux","Essayer 5 plants",n>=5],["Collectionneur","Essayer 10 plants",n>=10],["Explorateur","Indica, sativa et hybride",types.Indica&&types.Sativa&&types.Hybride],["Critique","Noter 5 plants",ratings>=5],["Photographe","Ajouter 3 photos",Object.keys(S.photos).length>=3]];
+  var bd=$("badges");bd.textContent="";
+  B.forEach(function(b){var d=h("div","badge"+(b[2]?" on":""));d.appendChild(h("b",null,(b[2]?"✓ ":"")+b[0]));d.appendChild(document.createTextNode(b[1]));bd.appendChild(d)});
+  var g=$("grid");g.textContent="";
+  list.slice().sort(function(a,b){return (S.tried[b[0]]?1:0)-(S.tried[a[0]]?1:0)||a[0].localeCompare(b[0])}).forEach(function(p){
+    var c=h("button","cell"+(S.tried[p[0]]?"":" off"));c.innerHTML=badge(p,!!S.tried[p[0]],64);c.appendChild(h("span",null,p[0]));
+    c.onclick=function(){openSheet(p)};g.appendChild(c);
+  });
+}
+function renderStats(){
+  var box=$("stats");box.textContent="";var list=all();
+  var done=list.filter(function(p){return S.tried[p[0]]});
+  if(!done.length){box.appendChild(h("div","empty","Coche ton premier plant pour voir tes stats."));return}
+  var c1=h("div","card");c1.appendChild(h("b",null,"Par type"));
+  ["Indica","Sativa","Hybride"].forEach(function(ty){
+    var tot=list.filter(function(p){return p[1]===ty}).length,d=done.filter(function(p){return p[1]===ty}).length;
+    var r=h("div","bar");r.appendChild(h("b",null,ty));var tr=h("div","tr"),i=h("i");i.style.width=(tot?Math.round(100*d/tot):0)+"%";tr.appendChild(i);r.appendChild(tr);r.appendChild(h("span",null,d+"/"+tot));c1.appendChild(r);
+  });
+  box.appendChild(c1);
+  var top=done.filter(function(p){return S.tried[p[0]].rating}).sort(function(a,b){return S.tried[b[0]].rating-S.tried[a[0]].rating}).slice(0,5);
+  if(top.length){var c2=h("div","card");c2.appendChild(h("b",null,"Mon top"));top.forEach(function(p){var r=h("div","bar");r.appendChild(h("b",null,p[0]));r.lastChild.style.flex="1";r.appendChild(h("span","stars",stars(S.tried[p[0]].rating)));c2.appendChild(r)});box.appendChild(c2)}
+  var rec=done.slice().sort(function(a,b){return (S.tried[b[0]].date||"").localeCompare(S.tried[a[0]].date||"")}).slice(0,5);
+  var c3=h("div","card");c3.appendChild(h("b",null,"Derniers essayés"));rec.forEach(function(p){var r=h("div","bar");r.appendChild(h("b",null,p[0]));r.lastChild.style.flex="1";r.appendChild(h("span",null,S.tried[p[0]].date||""));c3.appendChild(r)});box.appendChild(c3);
 }
 
 function drawRate(){
   var r=$("rate");r.textContent="";
-  for(var i=1;i<=5;i++){(function(i){var b=document.createElement("button");b.textContent="★";b.setAttribute("aria-label",i+" sur 5");b.className=i<=draft?"on":"";b.onclick=function(){draft=(draft===i?0:i);drawRate()};r.appendChild(b)})(i)}
+  for(var i=1;i<=5;i++){(function(i){var b=h("button",i<=draft?"on":"","★");b.setAttribute("aria-label",i+" sur 5");b.onclick=function(){draft=(draft===i?0:i);drawRate()};r.appendChild(b)})(i)}
+}
+function drawHero(){
+  var p=current,hr=$("hero");hr.textContent="";
+  if(S.photos[p[0]]){var im=h("img");im.src=S.photos[p[0]];im.alt="Ma photo de "+p[0];hr.appendChild(im)}else hr.innerHTML=badge(p,!!S.tried[p[0]],120);
+  $("rmphoto").hidden=!S.photos[p[0]];
+  $("fav").setAttribute("aria-pressed",S.fav[p[0]]?"true":"false");
 }
 function openSheet(p){
   current=p;var t=S.tried[p[0]];
-  $("st").textContent=p[0];$("sm").textContent=p[1];
+  $("st").textContent=p[0];$("sm").textContent=p[1]+" · "+thc(p)+(p[3]?" ("+SRC[p[3]]+")":"");
   draft=t?t.rating||0:0;$("note").value=t?t.note||"":"";
   $("save").textContent=t?"Enregistrer":"Marquer comme essayé";
-  $("remove").hidden=!t;drawRate();$("sheet").classList.add("open");
+  $("remove").hidden=!t;drawRate();drawHero();$("sheet").classList.add("open");
 }
-function closeSheet(){$("sheet").classList.remove("open");current=null}
+function closeSheet(){$("sheet").classList.remove("open");current=null;render()}
 
 $("save").onclick=function(){
   if(!current)return;
-  S.tried[current[0]]={rating:draft,note:$("note").value.slice(0,500),date:new Date().toISOString().slice(0,10)};
-  save();closeSheet();render();
+  var old=S.tried[current[0]];
+  S.tried[current[0]]={rating:draft,note:$("note").value.slice(0,500),date:old&&old.date?old.date:new Date().toISOString().slice(0,10)};
+  save();closeSheet();
 };
-$("remove").onclick=function(){if(!current)return;delete S.tried[current[0]];save();closeSheet();render()};
+$("remove").onclick=function(){if(!current)return;delete S.tried[current[0]];save();closeSheet()};
+$("fav").onclick=function(){if(!current)return;if(S.fav[current[0]])delete S.fav[current[0]];else S.fav[current[0]]=1;save();drawHero()};
+$("rmphoto").onclick=function(){if(!current)return;delete S.photos[current[0]];save();drawHero()};
+$("photo").onchange=function(){
+  var inp=this,f=inp.files&&inp.files[0];if(!f||!current)return;
+  var name=current[0],r=new FileReader();
+  r.onload=function(){var im=new Image();im.onload=function(){
+    var k=Math.min(1,360/Math.max(im.width,im.height)),c=document.createElement("canvas");
+    c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext("2d").drawImage(im,0,0,c.width,c.height);
+    S.photos[name]=c.toDataURL("image/jpeg",0.7);
+    if(!save()){delete S.photos[name];alert("Espace de stockage plein : la photo n'a pas été enregistrée.")}
+    if(current&&current[0]===name)drawHero();
+  };im.src=r.result};
+  r.readAsDataURL(f);inp.value="";
+};
 $("close").onclick=closeSheet;
 $("sheet").onclick=function(e){if(e.target===$("sheet"))closeSheet()};
-document.addEventListener("keydown",function(e){if(e.key==="Escape")closeSheet()});
-$("q").oninput=render;
-Array.prototype.forEach.call(document.querySelectorAll(".tab"),function(t){t.onclick=function(){
-  filter=t.getAttribute("data-f");
-  Array.prototype.forEach.call(document.querySelectorAll(".tab"),function(x){x.setAttribute("aria-pressed",x===t?"true":"false")});render()}});
+document.addEventListener("keydown",function(e){if(e.key==="Escape"&&current)closeSheet()});
+$("q").oninput=renderList;$("ty").onchange=renderList;$("so").onchange=renderList;
+qa(".tab").forEach(function(t){t.onclick=function(){tab=t.getAttribute("data-f");qa(".tab").forEach(function(x){x.setAttribute("aria-pressed",x===t?"true":"false")});renderList()}});
+qa(".nav button").forEach(function(b){b.onclick=function(){setView(b.getAttribute("data-v"))}});
+qa("[data-th]").forEach(function(b){b.onclick=function(){S.theme=b.getAttribute("data-th");save();applyTheme()}});
+$("rand").onclick=function(){var l=all().filter(function(p){return !S.tried[p[0]]});if(!l.length){alert("Tu as tout essayé !");return}openSheet(l[Math.floor(Math.random()*l.length)])};
 $("cadd").onclick=function(){
   var n=$("cn").value.trim().slice(0,40);if(!n)return;
   if(all().some(function(p){return p[0].toLowerCase()===n.toLowerCase()}))return;
   S.custom.push({name:n,type:$("ct").value});save();$("cn").value="";render();
 };
+$("bkgen").onclick=function(){$("bk").value=JSON.stringify({tried:S.tried,custom:S.custom,fav:S.fav});$("bkmsg").textContent="Sauvegarde prête : copie le texte ci-dessus."};
+$("bkrest").onclick=function(){
+  try{var d=JSON.parse($("bk").value);if(!d||typeof d!=="object")throw 0;
+    S.tried=Object.assign(S.tried,d.tried||{});S.fav=Object.assign(S.fav,d.fav||{});
+    (d.custom||[]).forEach(function(c){if(c&&c.name&&!S.custom.some(function(x){return x.name===c.name}))S.custom.push({name:String(c.name).slice(0,40),type:c.type})});
+    save();render();$("bkmsg").textContent="Sauvegarde restaurée."}
+  catch(e){$("bkmsg").textContent="Texte invalide : colle une sauvegarde générée ici."}
+};
 $("reset").onclick=function(){
-  if(confirm("Effacer tous tes plants essayés et tes notes ?")){S.tried={};S.custom=[];save();render()}
+  if(confirm("Effacer tous tes plants essayés, notes, favoris et photos ?")){S.tried={};S.custom=[];S.fav={};S.photos={};save();render()}
 };
 
 load();if(S.ok)start();else gate();
